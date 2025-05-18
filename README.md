@@ -1,6 +1,8 @@
 # Remote Touchpad
 
 ## For Users
+# English and Japanese README available
+[日本語版](./README_ja.md)
 
 ### Overview
 Remote Touchpad is a desktop app (Electron) that lets you use your smartphone or tablet as a remote touchpad and keyboard for your PC.
@@ -27,11 +29,11 @@ Remote Touchpad is a desktop app (Electron) that lets you use your smartphone or
 
 ### Installation & Usage
 
-1. Download the installer for your OS (.dmg, .exe, etc.) from [GitHub Releases](https://github.com/your-username/your-repo/releases)
-2. Run the installer and install the app
-3. Launch the app and check the IP address shown in the window
-4. On your phone/tablet, connect to the same Wi-Fi and access `http://[PC IP]:3000`
-5. Optionally, add to home screen (PWA supported)
+1. [GitHub Releases](https://github.com/hrak0x59/remote-touchpad/releases)からお使いのOS用のインストーラー（.dmg, .exeなど）をダウンロード
+2. インストーラーを実行し、アプリをインストール
+3. アプリを起動し、ウィンドウに表示されるIPアドレスを確認
+4. スマホ/タブレットで同じWi-Fiに接続し、`http://[PCのIP]:3000` にアクセス
+5. 必要に応じてホーム画面追加（PWA対応）
 
 #### Accessibility on macOS
 - Go to **System Settings > Privacy & Security > Accessibility**

@@ -27,7 +27,7 @@ Remote Touchpadは、スマホやタブレットをPCのリモートタッチパ
 
 ### インストール・使い方
 
-1. [GitHub Releases](https://github.com/ユーザー名/リポジトリ名/releases)からお使いのOS用のインストーラー（.dmg, .exeなど）をダウンロード
+1. [GitHub Releases](https://github.com/hrak0x59/remote-touchpad/releases)からお使いのOS用のインストーラー（.dmg, .exeなど）をダウンロード
 2. インストーラーを実行し、アプリをインストール
 3. アプリを起動し、ウィンドウに表示されるIPアドレスを確認
 4. スマホ/タブレットで同じWi-Fiに接続し、`http://[PCのIP]:3000` にアクセス
