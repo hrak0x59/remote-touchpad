@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Remote Touchpad Server</title>
+  <style>
+    body {
+      background: #181c20;
+      color: #fff;
+      font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+    #status {
+      margin: 12px 0;
+      font-size: 1.1rem;
+    }
+    #ip {
+      margin: 10px 0;
+      font-size: 1.3rem;
+      font-weight: bold;
+      letter-spacing: 1px;
+    }
+    #btns {
+      margin: 18px 0 0 0;
+      display: flex;
+      gap: 16px;
+    }
+    button {
+      font-size: 1.1rem;
+      padding: 8px 24px;
+      border-radius: 8px;
+      border: none;
+      background: #2d8cff;
+      color: #fff;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button:disabled {
+      background: #444a;
+      color: #aaa;
+      cursor: not-allowed;
+    }
+    .desc {
+      font-size: 0.9rem;
+      opacity: 0.7;
+    }
+  </style>
+</head>
+<body>
+  <h2>Remote Touchpad Server</h2>
+  <div id="status">Checking status...</div>
+  <div style="font-size:1.1rem;">Access from your phone:</div>
+  <div id="ip">-</div>
+  <div class="desc">(PC and phone must be on the same Wi-Fi)</div>
+  <div id="btns">
+    <button id="startBtn">サーバー起動</button>
+    <button id="stopBtn">サーバー停止</button>
+  </div>
+  <script>
+    const { ipcRenderer } = require('electron');
+    const status = document.getElementById('status');
+    const ip = document.getElementById('ip');
+    const startBtn = document.getElementById('startBtn');
+    const stopBtn = document.getElementById('stopBtn');
+
+    startBtn.onclick = () => ipcRenderer.send('start-server');
+    stopBtn.onclick = () => ipcRenderer.send('stop-server');
+
+    ipcRenderer.on('server-status', (e, { running, ipAddr }) => {
+      status.textContent = running ? 'サーバー起動中' : 'サーバー停止中';
+      ip.textContent = running && ipAddr ? `http://${ipAddr}:3000` : '-';
+      startBtn.disabled = running;
+      stopBtn.disabled = !running;
+    });
+
+    // 初期状態問い合わせ
+    ipcRenderer.send('get-server-status');
+  </script>
+</body>
+</html> 

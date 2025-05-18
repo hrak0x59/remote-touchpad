@@ -1,0 +1,46 @@
+# Node.js
+node_modules/
+package-lock.json
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Electron
+*.log
+*.tsbuildinfo
+.cache/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+
+# VSCode
+.vscode/
+
+# 配布ビルド
+/dist/
+/*.dmg
+/*.exe
+/*.app
+/*.deb
+/*.rpm
+/*.snap
+/*.AppImage
+
+# その他
+*.swp
+*.swo
+.idea/
+.env
+.env.*
+
+# Electron-builder一時ファイル
+/build/
+
+# テストカバレッジ
+coverage/
+
+# ローカル設定
+*.local 

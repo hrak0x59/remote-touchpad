@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Remote Touchpad</title>
+  <style>
+    body {
+      margin: 0;
+      background: #181c20;
+      color: #fff;
+      font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    #container {
+      flex: 1;
+      width: 100vw;
+      height: 100vh;
+      box-sizing: border-box;
+      background: #23272f;
+      border-radius: 0;
+      box-shadow: none;
+      touch-action: none;
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none;
+      position: relative;
+    }
+    #container.clicked {
+      box-shadow: 0 0 0 4px #00e0ff44;
+      background: #26303a;
+      transition: background 0.1s, box-shadow 0.1s;
+    }
+    #bottom-bar {
+      width: 100vw;
+      max-width: 100vw;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 8px;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      background: rgba(24,28,32,0.97);
+      padding: 12px 8px 18px 8px;
+      box-sizing: border-box;
+      border-top-left-radius: 16px;
+      border-top-right-radius: 16px;
+      box-shadow: 0 -2px 16px rgba(0,0,0,0.15);
+    }
+    #keyboard-row {
+      width: 100%;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: stretch;
+    }
+    #controls-row {
+      width: 100%;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+    #keyboard {
+      flex: 1;
+      font-size: 1.2rem;
+      padding: 12px;
+      border-radius: 8px;
+      border: none;
+      outline: none;
+      background: #23272f;
+      color: #fff;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      margin-right: 8px;
+      transition: box-shadow 0.2s;
+      min-width: 0;
+    }
+    #keyboard:focus {
+      box-shadow: 0 0 0 2px #2d8cff;
+    }
+    #reset, #zoom-reset {
+      margin-left: 8px;
+      flex-shrink: 0;
+      height: 40px;
+      font-size: 1rem;
+      padding: 0 14px;
+    }
+    #zoom-slider {
+      width: 120px;
+      margin: 0 8px;
+      accent-color: #2d8cff;
+      height: 28px;
+      flex-shrink: 1;
+      max-width: 40vw;
+    }
+    #bottom-bar span {
+      font-size: 1.7rem;
+      margin: 0 2px;
+      user-select: none;
+    }
+    @media (max-width: 600px) {
+      #bottom-bar {
+        max-width: 100vw;
+        padding: 8px 2vw 14px 2vw;
+        gap: 6px;
+      }
+      #zoom-slider {
+        width: 80px;
+        max-width: 60vw;
+      }
+      #container {
+        padding: 1vw;
+      }
+      #controls-row {
+        gap: 6px;
+      }
+    }
+  </style>
+  <link rel="manifest" href="manifest.json">
+</head>
+<body>
+  <div id="container">
+    <!-- pad要素は削除し、container全体がパッド領域になる -->
+  </div>
+  <div id="bottom-bar">
+    <div id="keyboard-row">
+      <input id="keyboard" placeholder="Type here and hit enter">
+      <button id="reset" style="margin-left:8px;">入力欄リセット</button>
+    </div>
+    <div id="controls-row">
+      <span id="zoom-minus" style="font-size:1.5rem;align-self:center;cursor:pointer;user-select:none;">−</span>
+      <input id="zoom-slider" type="range" min="-5" max="5" value="0">
+      <span id="zoom-plus" style="font-size:1.5rem;align-self:center;cursor:pointer;user-select:none;">＋</span>
+      <span id="zoom-value" style="min-width:2.5em;text-align:center;font-size:1.1rem;opacity:0.8;">0</span>
+      <button id="zoom-reset" class="button-reset" style="margin-left:8px;">サイズリセット</button>
+    </div>
+  </div>
+  <script>
+    const socket = new WebSocket("ws://" + location.host);
+    const pad = document.getElementById('container');
+    const keyboard = document.getElementById('keyboard');
+
+    let lastTouch = null;
+    let mousePos = { x: 0, y: 0 };
+    let lastTapTime = 0;
+    let longPressTimer = null;
+    let longPressed = false;
+    let prevValue = '';
+    let tapCount = 0;
+    let tapTimer = null;
+    let twoFingerLastY = null;
+    let twoFingerLastTime = null;
+    let inertiaVelocity = 0;
+    let inertiaTimer = null;
+    let isDragging = false;
+    let dragLastTouch = null;
+    let dragLastCenter = null;
+    let lastZoomValue = 0;
+
+    function startInertiaScroll(velocity) {
+      if (inertiaTimer) clearInterval(inertiaTimer);
+      let v = velocity;
+      const friction = 0.92; // 摩擦係数
+      inertiaTimer = setInterval(() => {
+        v *= friction;
+        if (Math.abs(v) < 0.5) {
+          clearInterval(inertiaTimer);
+          inertiaTimer = null;
+          return;
+        }
+        socket.send(JSON.stringify({ type: 'scroll', dy: v }));
+      }, 16); // 約60fps
+    }
+
+    pad.addEventListener('touchstart', e => {
+      if (e.touches.length === 3) {
+        isDragging = true;
+        const cx = (e.touches[0].clientX + e.touches[1].clientX + e.touches[2].clientX) / 3;
+        const cy = (e.touches[0].clientY + e.touches[1].clientY + e.touches[2].clientY) / 3;
+        dragLastCenter = { x: cx, y: cy };
+        socket.send(JSON.stringify({ type: 'drag_start' }));
+        return;
+      }
+      if (e.touches.length === 2) {
+        twoFingerLastY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+        twoFingerLastTime = Date.now();
+        if (longPressTimer) {
+          clearTimeout(longPressTimer);
+          longPressTimer = null;
+        }
+        return;
+      }
+      if (e.touches.length === 1 && tapCount === 0) {
+        const touch = e.touches[0];
+        lastTouch = { x: touch.clientX, y: touch.clientY };
+        longPressed = false;
+        longPressTimer = setTimeout(() => {
+          socket.send(JSON.stringify({ type: 'right_click' }));
+          longPressed = true;
+        }, 500);
+      }
+    });
+
+    pad.addEventListener('touchmove', e => {
+      if (isDragging && e.touches.length === 3) {
+        const cx = (e.touches[0].clientX + e.touches[1].clientX + e.touches[2].clientX) / 3;
+        const cy = (e.touches[0].clientY + e.touches[1].clientY + e.touches[2].clientY) / 3;
+        if (dragLastCenter) {
+          const dx = cx - dragLastCenter.x;
+          const dy = cy - dragLastCenter.y;
+          socket.send(JSON.stringify({ type: 'move', dx, dy }));
+          dragLastCenter = { x: cx, y: cy };
+        }
+        e.preventDefault();
+        return;
+      }
+      if (e.touches.length === 2) {
+        const y = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+        const now = Date.now();
+        if (twoFingerLastY !== null && twoFingerLastTime !== null) {
+          const dy = y - twoFingerLastY;
+          const dt = now - twoFingerLastTime;
+          if (Math.abs(dy) > 2) {
+            socket.send(JSON.stringify({ type: 'scroll', dy }));
+            inertiaVelocity = dy / dt * 16; // 16msあたりの速度に正規化
+          }
+        }
+        twoFingerLastY = y;
+        twoFingerLastTime = now;
+        e.preventDefault();
+        return;
+      }
+      const touch = e.touches[0];
+      if (lastTouch) {
+        const dx = touch.clientX - lastTouch.x;
+        const dy = touch.clientY - lastTouch.y;
+        socket.send(JSON.stringify({ type: 'move', dx, dy }));
+        lastTouch = { x: touch.clientX, y: touch.clientY };
+      }
+      e.preventDefault();
+      if (longPressTimer) {
+        clearTimeout(longPressTimer);
+        longPressTimer = null;
+      }
+    }, { passive: false });
+
+    pad.addEventListener('touchend', e => {
+      if (isDragging && e.touches.length === 0) {
+        isDragging = false;
+        dragLastCenter = null;
+        socket.send(JSON.stringify({ type: 'drag_end' }));
+        return;
+      }
+      if (e.touches.length < 2) {
+        if (Math.abs(inertiaVelocity) > 0.5) {
+          startInertiaScroll(inertiaVelocity);
+        }
+        twoFingerLastY = null;
+        twoFingerLastTime = null;
+        inertiaVelocity = 0;
+      }
+      if (longPressTimer) {
+        clearTimeout(longPressTimer);
+        longPressTimer = null;
+      }
+      if (longPressed) {
+        longPressed = false;
+        return;
+      }
+      lastTouch = null;
+      if (e.changedTouches.length === 1 && e.changedTouches[0].identifier !== undefined && e.touches.length === 0) {
+        tapCount++;
+        if (tapCount === 1) {
+          tapTimer = setTimeout(() => {
+            tapCount = 0;
+          }, 300);
+        } else if (tapCount === 2) {
+          socket.send(JSON.stringify({ type: 'click' }));
+          pad.classList.add('clicked');
+          setTimeout(() => pad.classList.remove('clicked'), 180);
+          clearTimeout(tapTimer);
+          tapCount = 0;
+        }
+      }
+    });
+
+    pad.addEventListener('contextmenu', e => e.preventDefault());
+
+    keyboard.addEventListener('input', e => {
+      const currValue = keyboard.value;
+      if (currValue.startsWith(prevValue) && currValue.length > prevValue.length) {
+        const added = currValue.slice(prevValue.length);
+        socket.send(JSON.stringify({ type: 'type', text: added }));
+      }
+      else if (prevValue.startsWith(currValue) && currValue.length < prevValue.length) {
+        for (let i = 0; i < prevValue.length - currValue.length; i++) {
+          socket.send(JSON.stringify({ type: 'backspace' }));
+        }
+      }
+      prevValue = currValue;
+    });
+
+    keyboard.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        socket.send(JSON.stringify({ type: 'enter' }));
+        keyboard.value = '';
+        prevValue = '';
+        keyboard.blur();
+        e.preventDefault();
+      }
+    });
+
+    keyboard.addEventListener('blur', () => {
+      keyboard.value = '';
+      prevValue = '';
+    });
+
+    document.getElementById('reset').addEventListener('click', () => {
+      keyboard.value = '';
+      prevValue = '';
+      socket.send(JSON.stringify({ type: 'reset_input' }));
+    });
+
+    // ズームスライダー
+    const zoomSlider = document.getElementById('zoom-slider');
+    const zoomValue = document.getElementById('zoom-value');
+    const zoomMinus = document.getElementById('zoom-minus');
+    const zoomPlus = document.getElementById('zoom-plus');
+    zoomSlider.addEventListener('input', () => {
+      const value = Number(zoomSlider.value);
+      socket.send(JSON.stringify({ type: 'zoom', value }));
+      lastZoomValue = value;
+      zoomValue.textContent = value;
+    });
+    // 初期値も反映
+    zoomValue.textContent = zoomSlider.value;
+
+    // サイズリセットボタン
+    document.getElementById('zoom-reset').addEventListener('click', () => {
+      zoomSlider.value = 0;
+      zoomSlider.dispatchEvent(new Event('input'));
+    });
+
+    // ＋/−ボタンで1ずつ増減
+    zoomMinus.addEventListener('click', () => {
+      let v = Number(zoomSlider.value);
+      v = Math.max(v - 1, Number(zoomSlider.min));
+      zoomSlider.value = v;
+      zoomSlider.dispatchEvent(new Event('input'));
+    });
+    zoomPlus.addEventListener('click', () => {
+      let v = Number(zoomSlider.value);
+      v = Math.min(v + 1, Number(zoomSlider.max));
+      zoomSlider.value = v;
+      zoomSlider.dispatchEvent(new Event('input'));
+    });
+  </script>
+</body>
+</html>
