@@ -95,6 +95,10 @@ wss.on('connection', ws => {
         }
       }
       ws._zoomValue = next;
+    } else if (data.type === 'spotlight') {
+      // Spotlight起動（Cmd+Space or Ctrl+Space）
+      const mod = process.platform === 'darwin' ? 'command' : 'control';
+      robot.keyTap('space', mod);
     }
   });
 });

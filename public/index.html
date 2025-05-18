@@ -124,6 +124,9 @@
 </head>
 <body>
   <div id="container">
+    <button id="spotlight-btn" title="Spotlight" style="position:absolute;top:16px;right:16px;width:48px;height:48px;border-radius:50%;background:#222a;backdrop-filter:blur(2px);border:none;display:flex;align-items:center;justify-content:center;z-index:10;box-shadow:0 2px 8px #0004;cursor:pointer;font-size:1.7rem;transition:background 0.2s;">
+      <span style="pointer-events:none;">🔍</span>
+    </button>
     <!-- pad要素は削除し、container全体がパッド領域になる -->
   </div>
   <div id="bottom-bar">
@@ -143,6 +146,7 @@
     const socket = new WebSocket("ws://" + location.host);
     const pad = document.getElementById('container');
     const keyboard = document.getElementById('keyboard');
+    const spotlightBtn = document.getElementById('spotlight-btn');
 
     let lastTouch = null;
     let mousePos = { x: 0, y: 0 };
@@ -366,6 +370,12 @@
       v = Math.min(v + 1, Number(zoomSlider.max));
       zoomSlider.value = v;
       zoomSlider.dispatchEvent(new Event('input'));
+    });
+
+    spotlightBtn.addEventListener('click', () => {
+      socket.send(JSON.stringify({ type: 'spotlight' }));
+      spotlightBtn.style.background = '#2d8cffcc';
+      setTimeout(() => spotlightBtn.style.background = '#222a', 180);
     });
   </script>
 </body>
