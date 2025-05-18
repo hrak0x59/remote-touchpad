@@ -279,17 +279,20 @@
       }
       lastTouch = null;
       if (e.changedTouches.length === 1 && e.changedTouches[0].identifier !== undefined && e.touches.length === 0) {
-        tapCount++;
-        if (tapCount === 1) {
-          tapTimer = setTimeout(() => {
-            tapCount = 0;
-          }, 300);
-        } else if (tapCount === 2) {
+        const now = Date.now();
+        if (!window._tapHistory) window._tapHistory = [];
+        window._tapHistory.push(now);
+        window._tapHistory = window._tapHistory.filter(t => now - t < 3000);
+        if (window._singleTapTimer) {
+          clearTimeout(window._singleTapTimer);
+          window._singleTapTimer = null;
           socket.send(JSON.stringify({ type: 'click' }));
           pad.classList.add('clicked');
           setTimeout(() => pad.classList.remove('clicked'), 180);
-          clearTimeout(tapTimer);
-          tapCount = 0;
+        } else {
+          window._singleTapTimer = setTimeout(() => {
+            window._singleTapTimer = null;
+          }, 300);
         }
       }
     });
