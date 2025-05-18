@@ -156,9 +156,13 @@
     let prevValue = '';
     let tapCount = 0;
     let tapTimer = null;
+    let twoFingerLastX = null;
     let twoFingerLastY = null;
     let twoFingerLastTime = null;
     let inertiaVelocity = 0;
+    let swipeAccumX = 0;
+    const SWIPE_THRESHOLD = 30; // より細かく反応
+    const isMac = navigator.userAgent.includes('Mac');
     let inertiaTimer = null;
     let isDragging = false;
     let dragLastTouch = null;
@@ -223,17 +227,39 @@
         return;
       }
       if (e.touches.length === 2) {
-        const y = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+        const x0 = e.touches[0].clientX;
+        const x1 = e.touches[1].clientX;
+        const y0 = e.touches[0].clientY;
+        const y1 = e.touches[1].clientY;
+        const avgX = (x0 + x1) / 2;
+        const avgY = (y0 + y1) / 2;
         const now = Date.now();
-        if (twoFingerLastY !== null && twoFingerLastTime !== null) {
-          const dy = y - twoFingerLastY;
-          const dt = now - twoFingerLastTime;
-          if (Math.abs(dy) > 2) {
-            socket.send(JSON.stringify({ type: 'scroll', dy }));
-            inertiaVelocity = dy / dt * 16; // 16msあたりの速度に正規化
+        if (twoFingerLastX !== null) {
+          const dx = avgX - twoFingerLastX;
+          swipeAccumX += dx;
+          // Macのみ左右スワイプを送信
+          if (isMac) {
+            while (swipeAccumX > SWIPE_THRESHOLD) {
+              socket.send(JSON.stringify({ type: 'browser_nav', direction: 'forward' }));
+              swipeAccumX -= SWIPE_THRESHOLD;
+            }
+            while (swipeAccumX < -SWIPE_THRESHOLD) {
+              socket.send(JSON.stringify({ type: 'browser_nav', direction: 'back' }));
+              swipeAccumX += SWIPE_THRESHOLD;
+            }
           }
         }
-        twoFingerLastY = y;
+        // 縦スクロール処理
+        if (twoFingerLastY !== null && twoFingerLastTime !== null) {
+          const dyScroll = avgY - twoFingerLastY;
+          const dt = now - twoFingerLastTime;
+          if (Math.abs(dyScroll) > 2) {
+            socket.send(JSON.stringify({ type: 'scroll', dy: dyScroll }));
+            inertiaVelocity = dyScroll / dt * 16;
+          }
+        }
+        twoFingerLastX = avgX;
+        twoFingerLastY = avgY;
         twoFingerLastTime = now;
         e.preventDefault();
         return;
@@ -299,6 +325,10 @@
           }, 300);
         }
       }
+      // 2本指スワイプ状態リセット
+      twoFingerLastX = null;
+      twoFingerLastY = null;
+      swipeAccumX = 0;
     });
 
     pad.addEventListener('contextmenu', e => e.preventDefault());

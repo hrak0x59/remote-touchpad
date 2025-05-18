@@ -99,6 +99,20 @@ wss.on('connection', ws => {
       // Spotlight起動（Cmd+Space or Ctrl+Space）
       const mod = process.platform === 'darwin' ? 'command' : 'control';
       robot.keyTap('space', mod);
+    } else if (data.type === 'browser_nav') {
+      if (data.direction === 'back') {
+        if (process.platform === 'darwin') {
+          robot.keyTap('[', 'command');
+        } else if (process.platform === 'win32') {
+          robot.keyTap('left', 'alt');
+        }
+      } else if (data.direction === 'forward') {
+        if (process.platform === 'darwin') {
+          robot.keyTap(']', 'command');
+        } else if (process.platform === 'win32') {
+          robot.keyTap('right', 'alt');
+        }
+      }
     }
   });
 });
