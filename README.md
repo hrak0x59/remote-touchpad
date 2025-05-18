@@ -14,6 +14,24 @@ Remote Touchpad is a desktop app (Electron) that lets you use your smartphone or
 
 ---
 
+### Why I Made This
+
+It was one of those cold nights where I just wanted to lie under my blanket and watch a movie.  
+But my MacBook was in clamshell mode, connected to an external monitor.  
+Using a keyboard or mouse from under the blanket felt heavy, awkward, and just too much trouble.
+
+I thought, *"Wouldn’t it be nice to control everything from my phone?"*
+
+I looked into apps like Remote Mouse, but:
+- Security vulnerabilities had been reported with no response from the developers  
+- Some comments mentioned constant data being sent to external servers  
+
+That made me uncomfortable, so I decided not to use it.  
+Instead, I thought — *why not make a simple, safe tool myself?*  
+That’s how **Remote Touchpad** was born.
+
+---
+
 ### Main Features
 - 1-finger: Mouse move
 - 2-finger: Scroll (with inertia)
