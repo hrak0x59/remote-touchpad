@@ -29,7 +29,7 @@ Remote Touchpad is a desktop app (Electron) that lets you use your smartphone or
 
 ### Installation & Usage
 1. Download the installer for your OS (.dmg, .exe, etc.) from [GitHub Releases](https://github.com/your-username/your-repo/releases)
-- MacOS: [Download .dmg](https://github.com/hrak0x59/remote-touchpad/releases/download/v0.1.0-beta/Remote.Touchpad-1.0.0-arm64.dmg)
+- MacOS: [Download .dmg](https://github.com/hrak0x59/remote-touchpad/releases/download/v0.2.0-beta/Remote.Touchpad-1.0.0-arm64.dmg)
 2. Run the installer and install the app
 3. Launch the app and check the IP address shown in the window
 4. On your phone/tablet, connect to the same Wi-Fi and access `http://[PC IP]:3000`
