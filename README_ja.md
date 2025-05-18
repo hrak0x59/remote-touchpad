@@ -38,6 +38,13 @@ Remote Touchpadは、スマホやタブレットをPCのリモートタッチパ
 - **システム設定 > プライバシーとセキュリティ > アクセシビリティ**で「Remote Touchpad.app」「Electron」など**関連する全て**にチェックを入れる
 - アプリやMacを再起動
 
+#### macOSで「壊れているためゴミ箱に入れられました」と表示される場合
+GitHub Releaseページからダウンロードしたアプリが壊れていると判定され、ゴミ箱に入れられる場合は、ターミナルで以下のコマンドを実行してください：
+
+```sh
+xattr -rd com.apple.quarantine "/Applications/Remote Touchpad.app"
+```
+
 ---
 
 ### 配布方法（GitHub Releases）

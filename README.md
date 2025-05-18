@@ -40,6 +40,13 @@ Remote Touchpad is a desktop app (Electron) that lets you use your smartphone or
 - Enable access for all items named "Remote Touchpad.app", "Electron", etc.
 - Restart the app (and Mac if needed)
 
+#### If the app is flagged as damaged on macOS
+If you download the app from the GitHub Release page and macOS says the file is damaged and moves it to the Trash, run the following command in Terminal:
+
+```sh
+xattr -rd com.apple.quarantine "/Applications/Remote Touchpad.app"
+```
+
 ---
 
 ### Distribution (GitHub Releases)
