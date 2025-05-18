@@ -120,6 +120,7 @@
     }
   </style>
   <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon.png">
 </head>
 <body>
   <div id="container">
@@ -235,9 +236,15 @@
       }
       const touch = e.touches[0];
       if (lastTouch) {
-        const dx = touch.clientX - lastTouch.x;
-        const dy = touch.clientY - lastTouch.y;
-        socket.send(JSON.stringify({ type: 'move', dx, dy }));
+        let dx = touch.clientX - lastTouch.x;
+        let dy = touch.clientY - lastTouch.y;
+        const maxStep = 24; // 1回の送信で許容する最大移動量（px）
+        const steps = Math.max(Math.ceil(Math.abs(dx) / maxStep), Math.ceil(Math.abs(dy) / maxStep), 1);
+        for (let i = 1; i <= steps; i++) {
+          const stepDx = dx / steps;
+          const stepDy = dy / steps;
+          socket.send(JSON.stringify({ type: 'move', dx: stepDx, dy: stepDy }));
+        }
         lastTouch = { x: touch.clientX, y: touch.clientY };
       }
       e.preventDefault();
